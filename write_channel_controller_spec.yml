@@ -1,0 +1,29 @@
+metadata:
+  interface_type: "AXI-Lite-Write"
+  version: "1.0"
+  description: "Protocol constraints and memory controller FSM specification for verification"
+
+protocol_rules:
+  - id: "ERR_RULE_01"
+    name: "Write Address Handshake Timeout"
+    description: "Once AWVALID is asserted, AWREADY must assert within 5 clock cycles to prevent bus starvation."
+    trigger: "awvalid == 1"
+    assert_condition: "awready == 1 within 5 cycles"
+    severity: "CRITICAL"
+
+  - id: "ERR_RULE_02"
+    name: "Write Response Before Handshake"
+    description: "BVALID cannot be asserted before both AWVALID/AWREADY and WVALID/WREADY handshakes have completed."
+    trigger: "bvalid == 1"
+    assert_condition: "transaction_initiated == true"
+    severity: "ERROR"
+
+fsm_definition:
+  name: "MEM_CTRL_FSM"
+  states: ["IDLE", "SETUP", "BUSY", "RESP_WAIT"]
+  initial_state: "IDLE"
+  valid_transitions:
+    IDLE: ["IDLE", "SETUP"]
+    SETUP: ["SETUP", "BUSY", "IDLE"] # Can abort to IDLE if reset occurs
+    BUSY: ["BUSY", "RESP_WAIT"]
+    RESP_WAIT: ["RESP_WAIT", "IDLE"]
